@@ -9,15 +9,15 @@ badmodels = ['AM2', 'CaltechGray', 'ECHAM-6.3', 'MetUM-GA6-CTL',
 def plot_allmodels(z, units=None, box=True, plotname=None, **kwargs):
     # plotting
     plt.figure(figsize=(18, 20), dpi=80, facecolor='w', edgecolor='k')
-    # plot model median
+    # plot model median of only the correct models
     ax = plt.subplot(5, 3, 1)
     if box:
         ax.add_patch(Rectangle((0, -30), 45, 60, alpha=1, facecolor='none',
                                edgecolor='black', linewidth=1))
-    z.median(dim='model').plot(**kwargs)
+    z.sel(model=list(set(z.model.values) - set(badmodels))).median(dim='model').plot(**kwargs)
     if units is not None:
-        plt.text(1.225, 0.5, units, va='center', rotation=90, transform=ax.transAxes)
-    ax.set_title('Model median')
+        plt.text(1.225, 0.75, units, va='center', rotation=90, transform=ax.transAxes)
+    ax.set_title('Model median (corrected)')
     # plot all models
     for i, modname in list(enumerate(z.model.values)):
         ax = plt.subplot(5, 3, i + 2)
@@ -32,18 +32,25 @@ def plot_allmodels(z, units=None, box=True, plotname=None, **kwargs):
     # layout and save plot
     saveplot(plotname)
     
-def plot_allvariables(z, box=True, plotname=None, **kwargs):
+def plot_allvariables(z, box=True, plotname=None, variables=None, **kwargs):
     # work out rows of plots needed
-    row = len(z.data_vars) // 5 + 1
+    data_vars = z.data_vars
+    if variables is not None:
+        data_vars = variables
+    row = len(data_vars) // 5 + 1
     # plotting
     plt.figure(figsize=(30, 4 * row), dpi=80, facecolor='w', edgecolor='k')
-    # plot all variables for model
-    for i, var in list(enumerate(z.data_vars)):
+    # plot specified variables for model
+    for i, var in list(enumerate(data_vars)):
         ax = plt.subplot(row, 5, i + 1)
         if box:
             ax.add_patch(Rectangle((0, -30), 45, 60, alpha=1, facecolor='none',
                                    edgecolor='black', linewidth=1))
-        z[var].plot(**kwargs)
+        # default to filled contour plot
+        try:
+            z[var].plot.contourf(**kwargs)
+        except ValueError:
+            z[var].plot(**kwargs)
     # layout and save plot
     saveplot(plotname)
 
@@ -57,15 +64,15 @@ def quivermap_allexperiments(u, v, z=None, units=None,
         ax.add_patch(Rectangle((0, -30), 45, 60, alpha=1, facecolor='none',
                                edgecolor='black', linewidth=1))
     if z is not None:
-        z.median(dim='model').plot.contourf(add_labels=False, **kwargs)
+        z.sel(model=list(set(z.model.values) - set(badmodels))).median(dim='model').plot.contourf(**kwargs)
         plt.text(1.225, 0.5, units, va='center', rotation=90, transform=ax.transAxes)
     q = plt.quiver(u.lon[::step], u.lat[::step], 
-                   u.median(dim='model')[::step, ::step],
-                   v.median(dim='model')[::step, ::step],
+                   u.sel(model=list(set(z.model.values) - set(badmodels))).median(dim='model')[::step, ::step],
+                   v.sel(model=list(set(z.model.values) - set(badmodels))).median(dim='model')[::step, ::step],
                    units='width', pivot='mid')
     qk = plt.quiverkey(q, .9, 1.04, 3, '3 m/s', labelpos='E',
                        coordinates='axes')
-    ax.set_title('Model median')
+    ax.set_title('Model median (corrected)')
     # plot all models
     for i, modname in list(enumerate(u.model.values)):
         ax = plt.subplot(5, 3, i + 2)
@@ -73,7 +80,7 @@ def quivermap_allexperiments(u, v, z=None, units=None,
             ax.add_patch(Rectangle((0, -30), 45, 60, alpha=1, facecolor='none',
                                    edgecolor='black', linewidth=1))
         if z is not None:
-            z.isel(model=i).plot.contourf(add_labels=False, **kwargs)
+            z.isel(model=i).plot.contourf(**kwargs)
         q = plt.quiver(u.lon[::step], u.lat[::step], 
                        u.isel(model=i)[::step, ::step],
                        v.isel(model=i)[::step, ::step],

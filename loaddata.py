@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 import xesmf as xe
-import requests
+from requests import get
 
 # months, models, experiments, variables covered
 month   = np.arange('2006-01', '2007-01', dtype='datetime64[M]').astype('datetime64[ns]')
@@ -9,10 +9,11 @@ mod     = np.array(['AM2', 'CAM3', 'CAM4', 'CNRM-AM6-DIA-v2', 'CaltechGray',
                     'ECHAM-6.1', 'ECHAM-6.3', 'IPSL-CM5A', 'MIROC5', 'MPAS',
                     'MetUM-GA6-CTL', 'MetUM-GA6-ENT', 'NorESM2'])
 exp     = np.array(['Aqua4xCO2', 'AquaControl', 'Land4xCO2', 'LandControl', 'LandOrbit'])
-var     = np.array(['clt', 'FLDS', 'FLDSC', 'FLNS', 'FLNSC', 'FLNT', 'FLNTC', 'FLUT', 'FLUTC', 'FSDS', 'FSDSC',
-                    'FSNS', 'FSNSC', 'FSNT', 'FSNTC', 'hfls', 'hfss', 'pr', 'prc', 'prsn', 'prw', 'ps', 'psl',
-                    'rlds', 'rldscs', 'rldt', 'rldtcs', 'rlus', 'rluscs', 'rlut', 'rlutcs', 'rsds', 'rsdscs', 
-                    'rsdt', 'rsdtcs', 'rsus', 'rsuscs', 'rsut', 'rsutcs', 'snow', 'ts'])
+var     = np.array(['clt', 'FLDS', 'FLDSC', 'FLNS', 'FLNSC', 'FLNT', 'FLNTC', 'FLUT', 'FLUTC', 'FSDS',
+                    'FSDSC', 'FSNS', 'FSNSC', 'FSNT', 'FSNTC', 'hfls', 'hfss', 'pr', 'prc', 'prsn',
+                    'prw', 'ps', 'psl', 'rlds', 'rldscs', 'rldt', 'rldtcs', 'rlus', 'rluscs', 'rlut',
+                    'rlutcs', 'rsds', 'rsdscs', 'rsdt', 'rsdtcs', 'rsus', 'rsuscs', 'rsut', 'rsutcs',
+                    'snow', 'ts'])
 var_lev = np.array(['hur', 'hus', 'ua', 'va', 'wap', 'zg'])
 
 # standard latitude, longitude, pressure
@@ -121,11 +122,14 @@ def regrid_data(model, experiment, variable, lev):
 def fetch_data(model, experiment, variable):
     # build up url string
     url = ('http://fletcher.ldeo.columbia.edu:81/home/OTHER/biasutti/netcdf/TRACMIP/AmonClimAug2nd2016/PP/'
-           + model + '/'
-           + experiment + '/'
-           + variable + '.nc/dods')
+           + model + '/' + experiment + '/' + variable)
+    # use time fixed data when available
+    if variable not in var[1:15]:
+        url += '_tf.nc/dods'
+    else:
+        url += '.nc/dods'
     # check for valid URL and fetch dataset
-    if requests.get(url).status_code == 404:
+    if get(url).status_code == 404:
         raise IOError('model/variable/experiment does not exist')
     else:
         ds = xr.open_dataset(url, decode_times=False)
