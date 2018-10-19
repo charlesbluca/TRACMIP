@@ -1,0 +1,27 @@
+name: tracmip
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.6
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas
+  - xarray
+  - netcdf4
+  - esmpy
+  - dask
+  - jupyter
+  - jupyterlab 
+  - notebook
+  - bottleneck 
+  - basemap 
+  - seaborn
+  - cartopy
+  - wrf-python
+  - holoviews
+  - statsmodels
+  - pip:
+    - pytest
+    - xesmf
