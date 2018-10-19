@@ -124,10 +124,10 @@ def fetch_data(model, experiment, variable):
     url = ('http://fletcher.ldeo.columbia.edu:81/home/OTHER/biasutti/netcdf/TRACMIP/AmonClimAug2nd2016/PP/'
            + model + '/' + experiment + '/' + variable)
     # use time fixed data when available
-    if variable not in var[1:15]:
-        url += '_tf.nc/dods'
-    else:
+    if (model == 'CaltechGray' and 'Land' in experiment) or variable.isupper():
         url += '.nc/dods'
+    else:
+        url += '_tf.nc/dods'
     # check for valid URL and fetch dataset
     if get(url).status_code == 404:
         raise IOError('model/variable/experiment does not exist')
