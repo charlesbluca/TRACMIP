@@ -33,7 +33,7 @@ plev_MPAS = np.array([3.544638, 7.388813, 13.967214, 23.944626, 37.23029, 53.114
 ds_out = xr.Dataset({'lat': (['lat'], lat),
                      'lon': (['lon'], lon)})
 
-def main():
+def get_variables():
     # fetch data for all variables
     ds = xr.merge(list(map(lambda v : get_experiments(v, False), var)))
     ds_plev = xr.merge(list(map(lambda v : get_experiments(v, True), var_lev)))
@@ -47,12 +47,11 @@ def main():
         if i not in [0, 8]:
             ds['psl'].values[:, i, :, :, :] *= 1.0 / 100.0
             ds['ps'].values[:, i, :, :, :] *= 1.0 / 100.0
-
-    ds.to_netcdf('nc/master')
-    print('data saved to nc/master')
-    ds_plev.to_netcdf('nc/master_plev')
-    print('plev data saved to nc/master_plev')
-    return ds, ds_plev 
+    ds.to_netcdf('../data/master')
+    print('data saved to /data/master')
+    ds_plev.to_netcdf('../data/master_plev')
+    print('plev data saved to /data/master_plev')
+    return ds, ds_plev
     
 def get_experiments(variable, lev):
     # lambda function to fetch/regrid data by model
@@ -134,6 +133,3 @@ def fetch_data(model, experiment, variable):
     else:
         ds = xr.open_dataset(url, decode_times=False)
     return ds
-
-if __name__ == '__main__':
-    main()
