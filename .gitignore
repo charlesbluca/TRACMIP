@@ -108,7 +108,7 @@ calc/
 plot/
 
 # output files
-nc/
+data/
 figs/
 *.nc
 *.pdf
