@@ -127,9 +127,9 @@ def regrid_data(model, experiment, variable, lev):
                '\x1b[0m') % (model, experiment, variable))
     return dr
 
-def fetch_data(model, experiment, variable):
+def fetch_data(model, experiment, variable, **kwargs):
     # open corresponding csv files
-    lines = open('csv/' + model + '_' + experiment + '.csv').readlines()
+    lines = open('../csv/' + model + '_' + experiment + '.csv').readlines()
     # handle models with data in single file
     if model in ['AM2', 'CAM3', 'CAM4', 'CaltechGray', 'MPAS']:
         line = lines[1]
@@ -145,9 +145,9 @@ def fetch_data(model, experiment, variable):
            '/entry.das')
     # fetch dataset (IPSL has unique variable names)
     if model == 'IPSL-CM5A' and variable == 'cl' and experiment == 'AquaControl':
-        ds = xr.open_dataset(url, decode_times=False)['rneb']
+        ds = xr.open_dataset(url, decode_times=False, **kwargs)['rneb']
     else:
-        ds = xr.open_dataset(url, decode_times=False)[variable]
+        ds = xr.open_dataset(url, decode_times=False, **kwargs)[variable]
     return ds
 
 def get_varname(model, variable):

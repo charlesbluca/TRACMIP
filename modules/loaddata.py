@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 import xesmf as xe
 from requests import get
+from socket import gethostname
 
 # months, models, experiments, variables covered
 month   = np.arange('2006-01', '2007-01', dtype='datetime64[M]').astype('datetime64[ns]')
@@ -33,6 +34,9 @@ plev_MPAS = np.array([3.544638, 7.388813, 13.967214, 23.944626, 37.23029, 53.114
 ds_out = xr.Dataset({'lat': (['lat'], lat),
                      'lon': (['lon'], lon)})
 
+# check if we are working on fletcher
+local = gethostname() == 'fletcher'
+
 def get_variables():
     # fetch data for all variables
     ds = xr.merge(list(map(lambda v : get_experiments(v, False), var)))
@@ -47,10 +51,10 @@ def get_variables():
         if i not in [0, 8]:
             ds['psl'].values[:, i, :, :, :] *= 1.0 / 100.0
             ds['ps'].values[:, i, :, :, :] *= 1.0 / 100.0
-    ds.to_netcdf('../data/master')
-    print('data saved to /data/master')
-    ds_plev.to_netcdf('../data/master_plev')
-    print('plev data saved to /data/master_plev')
+    ds.to_netcdf('../data/master.nc')
+    print('data saved to /data/master.nc')
+    ds_plev.to_netcdf('../data/master_plev.nc')
+    print('plev data saved to /data/master_plev.nc')
     return ds, ds_plev
     
 def get_experiments(variable, lev):
@@ -80,7 +84,11 @@ def get_models(experiment, variable, lev):
         
 def regrid_data(model, experiment, variable, lev):
     try:
-        ds = fetch_data(model, experiment, variable)
+        # collect data locally if possible
+        if local:
+            ds = fetch_data_local(model, experiment, variable)
+        else:
+            ds = fetch_data(model, experiment, variable)
         # make sure latitude from data is ascending
         if ds['lat'].values[0] > ds['lat'].values[1]:
             ds = ds.sel(lat=slice(None, None, -1))
@@ -123,7 +131,7 @@ def fetch_data(model, experiment, variable):
     url = ('http://fletcher.ldeo.columbia.edu:81/home/OTHER/biasutti/netcdf/TRACMIP/AmonClimAug2nd2016/PP/'
            + model + '/' + experiment + '/' + variable)
     # use time fixed data when available
-    if (model == 'CaltechGray' and 'Land' in experiment) or variable.isupper():
+    if (model in ['CaltechGray', 'MetUM-GA6-CTL', 'MetUM-GA6-ENT'] and 'Land' in experiment) or variable.isupper():
         url += '.nc/dods'
     else:
         url += '_tf.nc/dods'
@@ -133,3 +141,22 @@ def fetch_data(model, experiment, variable):
     else:
         ds = xr.open_dataset(url, decode_times=False)
     return ds
+
+def fetch_data_local(model, experiment, variable):
+    # build up path string
+    path = ('/basta/biasutti/netcdf/TRACMIP/AmonClimAug2nd2016/PP/'
+            + model + '/' + experiment + '/' + variable)
+    # use time fixed data when available
+    if (model in ['CaltechGray', 'MetUM-GA6-CTL', 'MetUM-GA6-ENT'] and 'Land' in experiment) or variable.isupper():
+        path += '.nc'
+    else:
+        path += '_tf.nc'
+    # fetch dataset
+    try:
+        ds = xr.open_dataset(path, decode_times=False)
+    except FileNotFoundError:
+        raise IOError('model/variable/experiment does not exist')
+    return ds
+
+if __name__ == '__main__':
+    get_variables()
