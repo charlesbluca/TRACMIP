@@ -112,18 +112,15 @@ def regrid_data(model, experiment, variable, lev):
         regridder = xe.Regridder(ds, ds_out, 'bilinear', 
                                  periodic=True, reuse_weights=True)
         dr = regridder(ds[variable])
-        print(('\x1b[1;30;42m' +
-               'regridding data for %s, %s, %s... success.' +
-               '\x1b[0m') % (model, experiment, variable))
+        dr.attrs = ds[variable].attrs
+        print('regridding data for %s, %s, %s... success.' % (model, experiment, variable))
     # if we get an invalid URL/dataset return appropriate blank DataArray
     except (ValueError, IOError, KeyError) as e:
         if lev:
             dr = xr.DataArray(np.zeros((month.size, plev.size, lat.size, lon.size)) + np.nan)
         else:
             dr = xr.DataArray(np.zeros((month.size, lat.size, lon.size)) + np.nan)
-        print(('\x1b[1;30;41m' +
-               'regridding data for %s, %s, %s... ' + str(e) +
-               '\x1b[0m') % (model, experiment, variable))
+        print('regridding data for %s, %s, %s... %s' % (model, experiment, variable, str(e)))
     return dr
 
 def fetch_data(model, experiment, variable):
